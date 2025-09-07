@@ -1,0 +1,28 @@
+{
+  "name": "intent-ai",
+  "version": "1.0.0",
+  "description": "AI-powered binary intent detection through assembly analysis",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "npx ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "collect": "npx ts-node scripts/collect-files.ts"
+  },
+  "keywords": [
+    "reverse-engineering",
+    "assembly",
+    "ai",
+    "binary-analysis"
+  ],
+  "author": "Karan Modi",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@alexaltea/capstone-js": "^3.0.5",
+    "axios": "^1.6.0"
+  }
+}
