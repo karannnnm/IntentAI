@@ -59,21 +59,23 @@ class BinaryLabeler {
   private loadExistingLabels(): void {
     if (fs.existsSync(this.outputPath)) {
       const data = JSON.parse(fs.readFileSync(this.outputPath, 'utf-8'));
-      const labeled = data.binaries || [];
+      const labels = data.labels || data.binaries || [];
       
-      labeled.forEach((labeledBin: LabeledBinary) => {
-        const idx = this.binaries.findIndex(b => b.sha256 === labeledBin.sha256);
+      labels.forEach((label: any) => {
+        const idx = this.binaries.findIndex(b => b.sha256 === label.sha256);
         if (idx !== -1) {
-          this.binaries[idx] = labeledBin;
+          this.binaries[idx].intent_label = label.intent_label;
+          this.binaries[idx].confidence = label.confidence;
+          this.binaries[idx].notes = label.notes;
         }
       });
       
-      console.log(`Loaded ${labeled.length} existing labels\n`);
+      console.log(`Loaded ${labels.length} existing labels\n`);
     }
   }
 
   private suggestLabel(binary: LabeledBinary): string {
-    const calls = binary.system_calls.map(c => c.toLowerCase());
+    const calls = binary.system_calls.map((c: string) => c.toLowerCase());
     
     const patterns = {
       file_reader: ['read', 'fread', 'fgets', 'getc', 'recv'],
@@ -87,7 +89,7 @@ class BinaryLabeler {
     
     for (const [intent, keywords] of Object.entries(patterns)) {
       scores[intent] = keywords.filter(kw => 
-        calls.some(call => call.includes(kw))
+        calls.some((call: string) => call.includes(kw))
       ).length;
     }
 
@@ -120,21 +122,21 @@ class BinaryLabeler {
     console.log(`\nSUGGESTED:    ${suggested}`);
 
     console.log('\n--- SYSTEM CALLS (Key Evidence) ---');
-    const uniqueCalls = [...new Set(binary.system_calls.map(c => c.replace(/^_/, '')))];
-    const importantCalls = uniqueCalls.filter(c => 
+    const uniqueCalls = [...new Set(binary.system_calls.map((c: string) => c.replace(/^_/, '')))];
+    const importantCalls = uniqueCalls.filter((c: string) => 
       !c.includes('architecture') && 
       !c.includes('PROJECT') &&
       !c.startsWith('__')
     ).slice(0, 20);
     
-    importantCalls.forEach((call, i) => {
+    importantCalls.forEach((call: string, i: number) => {
       if (i % 4 === 0) console.log('');
       process.stdout.write(call.padEnd(20));
     });
     console.log('\n');
 
     console.log('--- STRINGS (Top 10) ---');
-    binary.strings.slice(0, 10).forEach(str => {
+    binary.strings.slice(0, 10).forEach((str: string) => {
       if (str.length > 60) str = str.substring(0, 57) + '...';
       console.log(`  ${str}`);
     });
@@ -205,11 +207,20 @@ class BinaryLabeler {
 
   private saveProgress(): void {
     const labeled = this.binaries.filter(b => b.intent_label);
+    
+    const labels = labeled.map(b => ({
+      sha256: b.sha256,
+      filename: b.filename,
+      intent_label: b.intent_label,
+      confidence: b.confidence,
+      notes: b.notes || ''
+    }));
+
     const output = {
       last_updated: new Date().toISOString(),
       total_binaries: this.binaries.length,
       labeled_count: labeled.length,
-      binaries: this.binaries
+      labels: labels
     };
 
     fs.writeFileSync(this.outputPath, JSON.stringify(output, null, 2));

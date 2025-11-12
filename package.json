@@ -10,7 +10,8 @@
     "collect:windows": "npx ts-node scripts/collect-files.ts",
     "collect:mac": "npx ts-node scripts/collect-files-mac.ts",
     "analyze": "npx ts-node scripts/analyze-binaries.ts",
-    "label": "npx ts-node scripts/label-binaries.ts"
+    "label": "npx ts-node scripts/label-binaries.ts",
+    "build-dataset": "npx ts-node scripts/build-training-dataset.ts"
   },
   "keywords": [
     "reverse-engineering",
