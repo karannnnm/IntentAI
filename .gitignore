@@ -86,3 +86,8 @@ local/
 # Test files that shouldn't be committed
 test-output/
 *.test.json
+
+
+#object files
+*.o
+
