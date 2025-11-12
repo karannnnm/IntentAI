@@ -1,0 +1,21 @@
+{
+  "last_updated": "2025-11-12T22:05:27.859Z",
+  "total_binaries": 30,
+  "labeled_count": 2,
+  "labels": [
+    {
+      "sha256": "b46e8d4eac541d79f77000550b4254b47599df8dd8c52cc5b0f37cca1c3b02d4",
+      "filename": "bash",
+      "intent_label": "file_writer",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "sha256": "f0dd01fb124a8385415a1c5befa707aec8f88c9394a0fab66001767aae4f89f7",
+      "filename": "cat",
+      "intent_label": "file_reader",
+      "confidence": "medium",
+      "notes": ""
+    }
+  ]
+}
