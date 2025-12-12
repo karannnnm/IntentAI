@@ -91,3 +91,7 @@ test-output/
 #object files
 *.o
 
+PRD.md
+SETUP.md
+
+/data
