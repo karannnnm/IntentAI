@@ -1,0 +1,50 @@
+{
+  "_comment": "This manifest defines our *fixture programs*: small binaries we control and understand. Because we know exactly what each fixture does, we also know the correct intent label (ground truth) without guessing from /bin utilities.",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "fixtures": [
+    {
+      "name": "01-hello",
+      "source": "fixtures/src/01-hello.c",
+      "intent_label": "unknown",
+      "notes": "Hello-world baseline. Useful as a negative/control sample."
+    },
+    {
+      "name": "02-loop",
+      "source": "fixtures/src/02-loop.c",
+      "intent_label": "unknown",
+      "notes": "Loop baseline. Still not a filesystem/network intent."
+    },
+    {
+      "name": "03-function",
+      "source": "fixtures/src/03-function.c",
+      "intent_label": "unknown",
+      "notes": "Function-call baseline."
+    },
+    {
+      "name": "04-pointer",
+      "source": "fixtures/src/04-pointer.c",
+      "intent_label": "unknown",
+      "notes": "Pointer baseline."
+    },
+    {
+      "name": "05-struct",
+      "source": "fixtures/src/05-struct.c",
+      "intent_label": "unknown",
+      "notes": "Struct baseline."
+    },
+    {
+      "name": "06-file-read",
+      "source": "fixtures/src/06-file-read.c",
+      "intent_label": "file_reader",
+      "notes": "Reads from a file."
+    },
+    {
+      "name": "07-file-write",
+      "source": "fixtures/src/07-file-write.c",
+      "intent_label": "file_writer",
+      "notes": "Writes to a file."
+    }
+  ]
+}
+

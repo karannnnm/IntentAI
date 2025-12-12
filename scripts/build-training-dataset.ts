@@ -29,33 +29,87 @@ interface TrainingExample extends BinaryFeatures {
 }
 
 class TrainingDatasetBuilder {
-  async build(analysisPath: string, labelsPath: string, outputPath: string): Promise<void> {
+  async build(
+    analysisPath: string,
+    labelsPath: string,
+    outputPath: string,
+    opts?: { forceEmbeddedLabels?: boolean }
+  ): Promise<void> {
     console.log('Building ML training dataset...\n');
 
     const analysisData = JSON.parse(fs.readFileSync(analysisPath, 'utf-8'));
-    const labelsData = JSON.parse(fs.readFileSync(labelsPath, 'utf-8'));
-
     const binaries: BinaryFeatures[] = analysisData.binaries;
-    const labels: Label[] = labelsData.labels;
-
     console.log(`Total binaries analyzed: ${binaries.length}`);
-    console.log(`Total binaries labeled: ${labels.length}\n`);
 
-    const trainingExamples: TrainingExample[] = [];
+    /**
+     * Two supported labeling modes:
+     *
+     * 1) Manual labeling mode (old workflow):
+     *    - labelsPath exists (data/labeled/labeled-binaries.json)
+     *    - we join by sha256 and attach intent_label
+     *
+     * 2) Fixtures mode (new workflow):
+     *    - labelsPath may NOT exist
+     *    - the collector/analyzer already carries `intent_label` through
+     *      because fixtures have ground-truth labels from the manifest
+     */
+    let trainingExamples: TrainingExample[] = [];
 
-    labels.forEach(label => {
-      const binary = binaries.find(b => b.sha256 === label.sha256);
-      if (binary) {
-        trainingExamples.push({
-          ...binary,
-          intent_label: label.intent_label,
-          confidence: label.confidence,
-          notes: label.notes
-        });
+    // If analysis already contains labels (fixtures workflow), prefer those unless:
+    // - you explicitly want the manual labels file, AND
+    // - the labels actually match binaries in this analysis run.
+    const embedded = binaries.filter((b: any) => typeof (b as any).intent_label === 'string');
+    const hasEmbedded = embedded.length > 0;
+
+    if (opts?.forceEmbeddedLabels && hasEmbedded) {
+      console.log(`Using embedded labels from analysis (forced): ${embedded.length}\n`);
+      trainingExamples = embedded.map((b: any) => ({
+        ...(b as any),
+        confidence: (b as any).confidence || 'high',
+        notes: (b as any).notes || ''
+      }));
+    } else if (fs.existsSync(labelsPath)) {
+      const labelsData = JSON.parse(fs.readFileSync(labelsPath, 'utf-8'));
+      const labels: Label[] = labelsData.labels;
+      const joinable = labels.filter(l => binaries.some(b => b.sha256 === l.sha256));
+
+      // If the labels file doesn't match this analysis run but embedded labels exist,
+      // we fall back to embedded labels automatically.
+      if (joinable.length === 0 && hasEmbedded) {
+        console.log(`Labels file exists at ${labelsPath} but doesn't match this analysis run.`);
+        console.log(`Falling back to embedded labels from analysis (fixtures mode): ${embedded.length}\n`);
+        trainingExamples = embedded.map((b: any) => ({
+          ...(b as any),
+          confidence: (b as any).confidence || 'high',
+          notes: (b as any).notes || ''
+        }));
       } else {
-        console.warn(`Warning: No analysis found for ${label.filename} (${label.sha256})`);
+        console.log(`Total binaries labeled (labels file): ${labels.length}`);
+        console.log(`Matched labels for this analysis: ${joinable.length}\n`);
+
+        joinable.forEach(label => {
+          const binary = binaries.find(b => b.sha256 === label.sha256);
+          if (!binary) return;
+          trainingExamples.push({
+            ...binary,
+            intent_label: label.intent_label,
+            confidence: label.confidence,
+            notes: label.notes
+          });
+        });
       }
-    });
+    } else {
+      // Fixtures mode: use intent_label already present in analysis JSON
+      console.log(`Labels file not found at ${labelsPath}`);
+      console.log(`Using embedded labels from analysis (fixtures mode): ${embedded.length}\n`);
+
+      trainingExamples = embedded.map((b: any) => ({
+        ...(b as any),
+        // fixtures are ground-truth, so default confidence can be "high"
+        confidence: 'high',
+        notes: ''
+      }));
+    }
 
     const labelCounts: { [key: string]: number } = {};
     trainingExamples.forEach(ex => {
@@ -89,20 +143,15 @@ async function main() {
   const analysisPath = path.join(__dirname, '../data/processed/binary-analysis.json');
   const labelsPath = path.join(__dirname, '../data/labeled/labeled-binaries.json');
   const outputPath = path.join(__dirname, '../data/training/ml-dataset.json');
+  const forceEmbeddedLabels = process.argv.includes('--embedded');
 
   if (!fs.existsSync(analysisPath)) {
     console.error(`Error: Analysis file not found at ${analysisPath}`);
     process.exit(1);
   }
 
-  if (!fs.existsSync(labelsPath)) {
-    console.error(`Error: Labels file not found at ${labelsPath}`);
-    console.error('Run "npm run label" first to label binaries.');
-    process.exit(1);
-  }
-
   const builder = new TrainingDatasetBuilder();
-  await builder.build(analysisPath, labelsPath, outputPath);
+  await builder.build(analysisPath, labelsPath, outputPath, { forceEmbeddedLabels });
 }
 
 if (require.main === module) {
