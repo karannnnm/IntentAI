@@ -30,6 +30,9 @@ const INTENT_CATEGORIES = {
   '4': 'file_manipulator',
   '5': 'archive_tool',
   '6': 'system_utility',
+
+  // at this stage we mainly want "does network I/O" vs "doesn't", not protocol-specific intent.
+  '7': 'network_ops',
   '0': 'unknown'
 };
 
@@ -82,7 +85,16 @@ class BinaryLabeler {
       file_writer: ['write', 'fwrite', 'fprintf', 'fputs', 'send'],
       directory_ops: ['opendir', 'readdir', 'mkdir', 'rmdir', 'chdir'],
       file_manipulator: ['rename', 'unlink', 'remove', 'link', 'copy'],
-      archive_tool: ['compress', 'uncompress', 'inflate', 'deflate']
+      archive_tool: ['compress', 'uncompress', 'inflate', 'deflate'],
+      // Common networking symbols on macOS (and POSIX in general). This is intentionally
+      // capability-focused: sockets + name resolution + send/recv APIs.
+      network_ops: [
+        'socket', 'connect', 'bind', 'listen', 'accept',
+        'send', 'sendto', 'sendmsg', 'recv', 'recvfrom', 'recvmsg',
+        'getaddrinfo', 'freeaddrinfo', 'getnameinfo',
+        'inet_pton', 'inet_ntop', 'setsockopt', 'getsockopt',
+        'shutdown', 'select', 'poll', 'kqueue'
+      ]
     };
 
     const scores: { [key: string]: number } = {};
@@ -149,6 +161,7 @@ class BinaryLabeler {
     console.log('  4) file_manipulator  - Moves/renames/deletes files');
     console.log('  5) archive_tool      - Compression/archiving');
     console.log('  6) system_utility    - System operations (ps, kill, etc.)');
+    console.log('  7) network_ops       - Network operations (socket/connect/send/recv)');
     console.log('  0) unknown           - Not sure / other');
     console.log('\nCOMMANDS:');
     console.log('  s) skip   b) back   q) quit & save   r) review all');
