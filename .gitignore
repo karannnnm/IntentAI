@@ -71,6 +71,9 @@ data/processed/*.json
 # Fixture build outputs (we regenerate these locally)
 fixtures/bin/
 
+# macOS debug symbol bundles (can be created during builds when using -g)
+*.dSYM/
+
 # Temporary files
 *.tmp
 *.temp

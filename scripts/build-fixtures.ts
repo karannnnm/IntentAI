@@ -27,6 +27,8 @@ type IntentLabel =
   | 'archive_tool'
   | 'system_utility'
   | 'network_ops'
+  | 'console_output'
+  | 'compute_only'
   | 'unknown';
 
 interface FixtureEntry {
@@ -48,6 +50,16 @@ function run(cmd: string): string {
 
 function ensureDir(dirPath: string) {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function maybeDeleteDsym(binaryPath: string) {
+  // On macOS, some builds may produce a companion "<binary>.dSYM/" bundle.
+  // It's useful for debugging, but it clutters fixtures/bin and we don't need it
+  // for intent detection. So we remove it by default.
+  const dsymPath = `${binaryPath}.dSYM`;
+  if (fs.existsSync(dsymPath)) {
+    fs.rmSync(dsymPath, { recursive: true, force: true });
+  }
 }
 
 function main() {
@@ -94,6 +106,7 @@ function main() {
       const cmd = `clang ${flags} \"${sourceAbs}\" -o \"${outPath}\"`;
       try {
         run(cmd);
+        maybeDeleteDsym(outPath);
         if (v.stripAfter) {
           // strip may fail for some binaries (or if strip isn't available).
           // That's OK; the binary will just remain unstripped.
@@ -103,6 +116,8 @@ function main() {
             // ignore
           }
         }
+        // Stripping/debug tools may also generate a dSYM; keep bin dir tidy.
+        maybeDeleteDsym(outPath);
         console.log(`  + ${path.basename(outPath)}`);
       } catch (e: any) {
         console.warn(`  ! failed ${fx.name} (${v.suffix}): ${e?.message || e}`);

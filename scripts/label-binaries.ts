@@ -33,6 +33,8 @@ const INTENT_CATEGORIES = {
 
   // at this stage we mainly want "does network I/O" vs "doesn't", not protocol-specific intent.
   '7': 'network_ops',
+  '8': 'console_output',
+  '9': 'compute_only',
   '0': 'unknown'
 };
 
@@ -94,7 +96,10 @@ class BinaryLabeler {
         'getaddrinfo', 'freeaddrinfo', 'getnameinfo',
         'inet_pton', 'inet_ntop', 'setsockopt', 'getsockopt',
         'shutdown', 'select', 'poll', 'kqueue'
-      ]
+      ],
+      // Console output is extremely common. We only suggest it when it looks like
+      // the primary behavior and we don't see stronger filesystem/network signals.
+      console_output: ['printf', 'puts', 'putchar', 'fprintf', 'perror']
     };
 
     const scores: { [key: string]: number } = {};
@@ -105,6 +110,8 @@ class BinaryLabeler {
       ).length;
     }
 
+    // Prefer "stronger" intents over console_output when ties happen, since fprintf/printf
+    // can appear in file writers and error paths.
     const maxScore = Math.max(...Object.values(scores));
     if (maxScore > 0) {
       const suggested = Object.entries(scores).find(([_, score]) => score === maxScore);
@@ -162,6 +169,8 @@ class BinaryLabeler {
     console.log('  5) archive_tool      - Compression/archiving');
     console.log('  6) system_utility    - System operations (ps, kill, etc.)');
     console.log('  7) network_ops       - Network operations (socket/connect/send/recv)');
+    console.log('  8) console_output    - Prints to stdout/stderr');
+    console.log('  9) compute_only      - Computation without obvious I/O');
     console.log('  0) unknown           - Not sure / other');
     console.log('\nCOMMANDS:');
     console.log('  s) skip   b) back   q) quit & save   r) review all');

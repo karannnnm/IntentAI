@@ -24,6 +24,8 @@ type IntentLabel =
   | 'archive_tool'
   | 'system_utility'
   | 'network_ops'
+  | 'console_output'
+  | 'compute_only'
   | 'unknown';
 
 interface FixtureEntry {

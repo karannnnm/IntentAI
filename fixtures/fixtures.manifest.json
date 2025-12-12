@@ -6,32 +6,32 @@
     {
       "name": "01-hello",
       "source": "fixtures/src/01-hello.c",
-      "intent_label": "unknown",
-      "notes": "Hello-world baseline. Useful as a negative/control sample."
+      "intent_label": "console_output",
+      "notes": "Hello-world baseline. Prints to stdout."
     },
     {
       "name": "02-loop",
       "source": "fixtures/src/02-loop.c",
-      "intent_label": "unknown",
-      "notes": "Loop baseline. Still not a filesystem/network intent."
+      "intent_label": "compute_only",
+      "notes": "Loop baseline. Pure computation/control-flow."
     },
     {
       "name": "03-function",
       "source": "fixtures/src/03-function.c",
-      "intent_label": "unknown",
-      "notes": "Function-call baseline."
+      "intent_label": "compute_only",
+      "notes": "Function-call baseline. Pure computation."
     },
     {
       "name": "04-pointer",
       "source": "fixtures/src/04-pointer.c",
-      "intent_label": "unknown",
-      "notes": "Pointer baseline."
+      "intent_label": "compute_only",
+      "notes": "Pointer baseline. Pure computation/memory use."
     },
     {
       "name": "05-struct",
       "source": "fixtures/src/05-struct.c",
-      "intent_label": "unknown",
-      "notes": "Struct baseline."
+      "intent_label": "compute_only",
+      "notes": "Struct baseline. Pure computation/data handling."
     },
     {
       "name": "06-file-read",
