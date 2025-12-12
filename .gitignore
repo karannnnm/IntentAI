@@ -68,6 +68,9 @@ jspm_packages/
 data/raw/*.json
 data/processed/*.json
 
+# Fixture build outputs (we regenerate these locally)
+fixtures/bin/
+
 # Temporary files
 *.tmp
 *.temp

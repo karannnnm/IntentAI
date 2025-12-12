@@ -11,6 +11,11 @@ interface CollectedFile {
   sha256: string;
   type: string;
   architecture?: string;
+  // Optional: if the collector already knows the label (fixtures workflow),
+  // we can carry it through for dataset building without manual labeling.
+  intent_label?: string;
+  fixture_name?: string;
+  build_variant?: string;
 }
 
 interface BinaryFeatures {
@@ -25,6 +30,10 @@ interface BinaryFeatures {
   instruction_count: number;
   analysis_success: boolean;
   error?: string;
+  // Optional passthrough metadata (useful for fixtures)
+  intent_label?: string;
+  fixture_name?: string;
+  build_variant?: string;
 }
 
 class BinaryAnalyzer {
@@ -80,7 +89,10 @@ class BinaryAnalyzer {
       strings: [],
       function_count: 0,
       instruction_count: 0,
-      analysis_success: false
+      analysis_success: false,
+      intent_label: file.intent_label,
+      fixture_name: file.fixture_name,
+      build_variant: file.build_variant
     };
 
     try {
@@ -138,14 +150,37 @@ class BinaryAnalyzer {
 
   private extractStats(filePath: string): { functions: number; instructions: number } {
     try {
-      const output = execSync(`objdump -d "${filePath}" 2>/dev/null`, {
-        encoding: 'utf-8',
-        maxBuffer: 10 * 1024 * 1024
-      });
+      // On macOS, `otool` is the most reliable built-in disassembly viewer for Mach-O.
+      // We only use it here for *counts* (functions/instructions), not for training.
+      //
+      // Fallbacks:
+      // - If otool is missing or fails, try objdump.
+      let output = '';
+      let usedOtool = false;
+      try {
+        output = execSync(`otool -tv "${filePath}" 2>/dev/null`, {
+          encoding: 'utf-8',
+          maxBuffer: 10 * 1024 * 1024
+        });
+        usedOtool = true;
+      } catch {
+        output = execSync(`objdump -d "${filePath}" 2>/dev/null`, {
+          encoding: 'utf-8',
+          maxBuffer: 10 * 1024 * 1024
+        });
+      }
 
       const lines = output.split('\n');
-      const functionCount = lines.filter(line => /^[0-9a-f]+ <.*>:/.test(line)).length;
-      const instructionCount = lines.filter(line => /^\s*[0-9a-f]+:/.test(line)).length;
+      // objdump typically shows: "0000000100000460 <_main>:"
+      // otool typically shows: "_main:" then instructions like:
+      // "0000000100000460\tadd\tx29, sp, #0x10"
+      const functionCount = usedOtool
+        ? lines.filter(line => /^_[A-Za-z0-9$_.]+:$/.test(line.trim())).length
+        : lines.filter(line => /^[0-9a-f]+ <.*>:/.test(line)).length;
+
+      const instructionCount = usedOtool
+        ? lines.filter(line => /^[0-9a-fA-F]{8,16}\t/.test(line)).length
+        : lines.filter(line => /^\s*[0-9a-f]+:/.test(line)).length;
 
       return {
         functions: functionCount,
@@ -177,11 +212,18 @@ class BinaryAnalyzer {
 async function main() {
   const analyzer = new BinaryAnalyzer();
 
-  const inputPath = path.join(__dirname, '../data/raw/collected-files-mac.json');
+  // Allow passing an explicit input file:
+  // - fixtures: data/raw/collected-fixtures.json
+  // - old mac collector: data/raw/collected-files-mac.json
+  const inputPath =
+    process.argv[2] ||
+    path.join(__dirname, '../data/raw/collected-fixtures.json');
 
   if (!fs.existsSync(inputPath)) {
     console.error(`Error: Collected files not found at ${inputPath}`);
-    console.error('Run "npm run collect:mac" first.');
+    console.error('Run one of:');
+    console.error('  - npm run fixtures:build');
+    console.error('  - npm run fixtures:collect');
     process.exit(1);
   }
 

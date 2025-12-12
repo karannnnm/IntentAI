@@ -11,7 +11,13 @@
     "collect:mac": "npx ts-node scripts/collect-files-mac.ts",
     "analyze": "npx ts-node scripts/analyze-binaries.ts",
     "label": "npx ts-node scripts/label-binaries.ts",
-    "build-dataset": "npx ts-node scripts/build-training-dataset.ts"
+    "build-dataset": "npx ts-node scripts/build-training-dataset.ts",
+
+    "//": "Fixtures workflow (macOS/arm64-first): compile our own small programs, then analyze them.",
+    "fixtures:build": "npx ts-node scripts/build-fixtures.ts",
+    "fixtures:collect": "npx ts-node scripts/collect-fixtures.ts",
+    "fixtures:analyze": "npx ts-node scripts/analyze-binaries.ts data/raw/collected-fixtures.json",
+    "fixtures:dataset": "npx ts-node scripts/build-training-dataset.ts --embedded"
   },
   "keywords": [
     "reverse-engineering",
